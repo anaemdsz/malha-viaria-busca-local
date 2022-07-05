@@ -89,8 +89,8 @@ class NetworkOptimization:
             return 0
         else:
             try:
-                shortest_path = nx.shortest_path(Gs, origin, dest, weight='travel_time')
-                shortest_path_length = nx.shortest_path_length(Gs, origin, dest, weight='travel_time')
+                shortest_path = nx.shortest_path(Gs, origin, dest, weight='travel_time')                # Sub travel time for cars/lane/km
+                shortest_path_length = nx.shortest_path_length(Gs, origin, dest, weight='travel_time')  # Sub travel time for cars/lane/km
                 if shortest_path_length > self.threshold:        
                     return shortest_path_length
             except:
