@@ -1,11 +1,7 @@
-from load_place import create_net_file_from
 import osmnx as ox
 import networkx as nx
-import pandas as pd
-import matplotlib.pyplot as plt
 from pprint import pprint
-import copy
-import multiprocessing
+import copy, numpy
 import concurrent.futures
 from datetime import datetime
 class NetworkOptimization:
@@ -28,6 +24,29 @@ class NetworkOptimization:
         self.threshold = threshold
         pass
 
+    def get_probability_table(self, graph):
+        p_table = []
+        for u, v, k, d in graph.edges(keys=True, data=True):
+            p_edge = []
+            total_kms = 0
+            for _u, _v, _k , _d in graph.edges(keys=True, data=True):
+                if _u == v:
+                    road_kms = int(_d['lanes'][0])*_d['length']
+                elif (u == _u) and (v == _v) and (k == _k):
+                    road_kms = int(_d['lanes'][0])*_d['length']
+                else:
+                    road_kms = 0
+                total_kms += road_kms
+                p_edge.append(road_kms)
+            for i, p in enumerate(p_edge):
+                p_edge[i] = p/total_kms
+            p_table.append(p_edge)
+        print('Generating probability table for Markov Chain')
+        pprint(p_table)
+        return p_table
+                
+
+
     def remove_lane(self, graph, edge, nodes_tuple, prefer_smaller_side=True):
         lanes = edge['lanes']
         if lanes == '1':
@@ -37,7 +56,7 @@ class NetworkOptimization:
                 edge['lanes'] = str(int(min(lanes)) - 1)
             else:
                 edge['lanes'] = str(int(max(lanes)) - 1)
-        except e:
+        except Exception as e:
             pprint(e)
 
         graph[nodes_tuple[0]][nodes_tuple[1]][nodes_tuple[2]]['lanes'] = edge['lanes']
@@ -51,7 +70,7 @@ class NetworkOptimization:
                 edge['lanes'] = str(int(min(lanes)) + 1)
             else:
                 edge['lanes'] = str(int(max(lanes)) + 1)
-        except e:
+        except Exception as e:
             pprint(e)
         
         _graph[nodes_tuple[0]][nodes_tuple[1]][nodes_tuple[2]]['lanes'] = edge['lanes']
@@ -78,12 +97,6 @@ class NetworkOptimization:
 
         return graph
 
-    def reduce_edge_traveltime(self, graph, edge, reduction):
-        try:
-            edge['travel_time'] = edge['travel_time']* ((100-reduction)/100)
-        except:
-            pass
-
     def average_time_step(self, Gs, origin, dest):
         if origin == dest:
             return 0
@@ -103,28 +116,18 @@ class NetworkOptimization:
     def get_average_time(self, Gs, threshold):
         total_time = 0
         total_routes = 0
-        # impute missing edge speeds and add travel times
-        # Gs = ox.add_edge_speeds(Gs, fallback=50.0)
-        # Gs = ox.add_edge_travel_times(Gs)
         node_pairs = []
         for origin in Gs.nodes.keys():
             for dest in Gs.nodes.keys():
                 node_pairs.append((origin, dest))
-        #times_traversed, total_time, total_routes
-        lock = multiprocessing.Manager().Lock()
         with concurrent.futures.ThreadPoolExecutor() as executor:
             res = {executor.submit( self.average_time_step, Gs, pair[0], pair[1]) for pair in node_pairs}
 
-            i = 1
             for future in concurrent.futures.as_completed(res):
-                print(f'{i}/{len(node_pairs)}', end='\r')
-                i +=1
-                #pprint(future.result())
                 edge_time = future.result()
                 if edge_time == 0 or edge_time == None:
                     pass
                 else:
-                   #with lock:
                     total_time += edge_time
                     total_routes += 1  
             executor.shutdown()     
@@ -134,23 +137,25 @@ class NetworkOptimization:
         else:
             return 0
     
-    
-    def add_edge_max_cars(self, graph, average_car=4):
-        # We consider an average car length of 4 meters.
-        edges = graph.edges(keys=True, data=True)
-        for u, v, k, data in edges:
-            lanes = min(data['lanes'])
-            data["max_cars"] = int(lanes)*(data["length"]/average_car)
-        
-        return graph
-
     def add_lanes(self, graph):
         edges = graph.edges(keys=True, data=True)
         for u, v, k, data in edges:
             if "lanes" not in data:
                 data["lanes"] = '1'
-        
         return graph
+
+    def get_vehichle_density(self, graph, vehichles_per_km=25, timesteps=1):
+        p_table = self.get_probability_table(graph)
+        vehichles = []
+        for u, v, k, data in graph.edges(keys=True, data=True):
+            edge_kms = int(min(data['lanes'])) * data['length']
+            vehichles.append(vehichles_per_km * edge_kms)
+        
+        for i in range(timesteps):
+            vehichles = numpy.matmul(vehichles, p_table)/1000
+        
+        return vehichles
+
 
     def apply_changes(self, graph, change):
         pprint(change)
@@ -159,8 +164,10 @@ class NetworkOptimization:
         if (edge == (0, 0, 0)):
             pprint(f"No better solution was found.")
             return graph
+        u, v, k = edge
 
-        self.budget -= self.get_cost(graph, change_type, edge)
+        # Changed to length based instead of cost
+        self.budget -= graph[u][v][k]['length'] #self.get_cost(graph, change_type, edge)
         
         data = graph[edge[0]][edge[1]][edge[2]]
         if change_type == "add_lane": 
@@ -186,9 +193,117 @@ class NetworkOptimization:
 
         return(length*self.prices[type])
 
+    def get_density_colors (self, densities):
+        colors = []
+        for dens in densities:
+            if dens < 7:
+                colors.append('w')
+            elif dens < 11:
+                colors.append('b')
+            elif dens < 16:
+                colors.append('g')
+            elif dens < 22:
+                colors.append('y')
+            elif dens < 28:
+                colors.append('orange')
+            else:
+                colors.append('r')
+        return colors
 
 
-    def neighborhood_search(self, graph, budget, file_name, only_primary=False):
+    def density(self, graph, budget, file_name, only_primary=False, n_densities=10):
+        self.budget = budget
+        graph = ox.add_edge_speeds(graph, fallback=50.0) # Add max speed to lanes
+        graph = ox.add_edge_travel_times(graph) # Add travel time to lanes
+        graph = self.add_lanes(graph) # Some edges don't have lanes on OSM, so we set them to 1
+        graph = self.add_edge_max_cars(graph) # Add max amount of cars for all edges
+        starting_densities = self.get_vehichle_density(graph)      
+        pprint(f"Starting total density={sum(starting_densities)}")  
+        worst_n_densities = sum(sorted(starting_densities, reverse=True)[:n_densities])
+
+        curr_best = {"density":worst_n_densities,
+                    "type": None,
+                    "edge": None}    
+
+        while self.budget > 0:
+            graph = ox.add_edge_travel_times(graph) # Add travel time to lanes
+            edges = graph.edges(keys=True, data=True) # Initialize edges
+            
+            if curr_best['edge'] == (0, 0, 0):
+                break
+
+            curr_best = {"density":worst_n_densities,
+                        "type": None,
+                        "edge": (0, 0, 0)}            
+            
+            pprint(f'Budget remaining: {self.budget}')
+            for u, v, k, data in edges:
+                data["passed"] = False
+
+            for u, v, k, data in edges:
+                if (data["highway"] != "primary") and only_primary:
+                    continue
+
+                improvements_edge = {} # Reset average times for the new edge
+                
+                aux_graph = copy.deepcopy(graph)
+                edge = aux_graph.edges[(u, v, k)]
+                aux_graph = self.add_lane(aux_graph, edge, (u, v, k))
+                new_densities = self.get_vehichle_density(aux_graph)
+                improvements_edge["add_lane"] = sum(sorted(new_densities, reverse=True)[:n_densities])
+                
+                aux_graph = copy.deepcopy(graph)
+                edge = aux_graph.edges[(u, v, k)]
+                aux_graph = self.remove_lane(aux_graph, edge, (u, v, k))
+                new_densities = self.get_vehichle_density(aux_graph)
+                improvements_edge["remove_lane"] = sum(sorted(new_densities, reverse=True)[:n_densities])
+                
+                aux_graph = copy.deepcopy(graph)
+                edge = aux_graph.edges[(u, v, k)]
+                aux_graph = self.reverse_lane(aux_graph, edge, (u, v, k))
+                new_densities = self.get_vehichle_density(aux_graph)
+                improvements_edge["reverse_lane"]= sum(sorted(new_densities, reverse=True)[:n_densities])
+                if curr_best['density'] > min(improvements_edge.values()):
+                    new_best = min(improvements_edge.values())
+                    new_type = min(improvements_edge, key=improvements_edge.get)
+                    new_edge =  (u, v, k)
+
+                    cost = graph[u][v][k]['length'] #self.get_cost(graph, new_type, new_edge)
+                    if self.budget >= cost:
+                        curr_best = {
+                            "density": new_best,
+                            "type": new_type,
+                            "edge": new_edge
+                            }
+
+            graph = self.apply_changes(graph, curr_best)        
+            worst_n_densities = curr_best["density"]
+            pprint(f'Budget remaining: {self.budget}')
+
+        n_densities = self.get_vehichle_density(graph)
+        print(n_densities)
+        ec = self.get_density_colors(n_densities)
+
+        n_densities = (n_densities/max(n_densities))+0.25
+        ox.plot_graph(graph, edge_color=ec, show=False, node_size=0, edge_linewidth=n_densities, save=True, filepath=f'{file_name}_{budget}.png')
+
+        ec = []
+        el = []
+        for u, v, k, d in graph.edges(keys=True, data=True): 
+            if (u, v, k) in self.changes:
+                ec.append('r')
+                el.append(0.7)
+            else:
+                ec.append('b')
+                el.append(0.3)
+        ox.plot_graph(graph, edge_color=ec, show=False, node_size=0, edge_linewidth=el, save=True, filepath=f'{file_name}_{budget}_changes.png')
+
+
+
+        pprint(f"Best possible solution for this budget: {sum(self.get_vehichle_density(graph))}")
+
+
+    def traveltime(self, graph, budget, file_name, only_primary=False):
         self.budget = budget
         graph = ox.add_edge_speeds(graph, fallback=50.0) # Add max speed to lanes
         graph = ox.add_edge_travel_times(graph) # Add travel time to lanes
@@ -211,31 +326,15 @@ class NetworkOptimization:
             curr_best = {"traveltime":starting_average_travel,
                         "type": None,
                         "edge": (0, 0, 0)}            
-            
-            i = 1
+
             pprint(f'Budget remaining: {self.budget}')
             for u, v, k, data in edges:
                 data["passed"] = False
             for u, v, k, data in edges:
-                pprint(f'{datetime.now()} -- {i}/{len(edges)}: {(u, v, k)}')
-                # pprint(data)
-                i += 1
                 if data["highway"] != "primary":
                     continue
 
                 improvements_edge   = {} # Reset average times for the new edge 
-                
-                # Uncomment for visuals on the progress, slows down program.
-                # ec = []
-                # for x, y, z, d in edges: # update colormap to visualize progress
-                #     #print(data)
-                #     if u == x and v ==  y:
-                #         ec.append('r')
-                #     elif d["passed"] == True:
-                #         ec.append('g')
-                #     else:
-                #         ec.append('y')
-                # ox.plot_graph(graph, edge_color=ec, show=False, node_size=0, edge_linewidth=0.3, save=True, filepath=f'ufsc.png')
                 
                 aux_graph = copy.deepcopy(graph)
                 edge = aux_graph.edges[(u, v, k)]
@@ -251,7 +350,8 @@ class NetworkOptimization:
                 
                 aux_graph = copy.deepcopy(graph)
                 edge = aux_graph.edges[(u, v, k)]
-                improvements_edge["reverse_lane"]= self.get_average_time(self.reverse_lane(aux_graph, edge, (u, v, k)), self.threshold)
+                aux_graph = self.reverse_lane(aux_graph, edge, (u, v, k))
+                improvements_edge["reverse_lane"]= self.get_average_time(aux_graph, self.threshold)
         
                 
                 if curr_best['traveltime'] > min(improvements_edge.values()):
@@ -288,7 +388,7 @@ class NetworkOptimization:
             starting_average_travel = curr_best["traveltime"]
             pprint(f'Budget remaining: {self.budget}')
         pprint(f"Best possible solution for this budget: {self.get_average_time(graph, self.threshold)}")
-        # Uncomment for visuals on the progress, slows down program.
+        
         pprint(self.changes)
         ec = []
         el = []

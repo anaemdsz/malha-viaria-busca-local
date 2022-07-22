@@ -1,0 +1,197 @@
+Analyzing ufsc::450::15 : 2022-07-19 16:28:10.461501
+Buget: 15k: ufsc - 450m
+Nodes: 48
+Edges: 89
+Primaries: 14
+98.2055342044582
+'Budget remaining: 1500'
+{'edge': (0, 0, 0), 'traveltime': 98.2055342044582, 'type': None}
+'No better solution was found.'
+'Budget remaining: 1500'
+'Best possible solution for this budget: 98.20553420445813'
+[]
+Finished ufsc::450::15 : 2022-07-19 16:28:38.079118
+
+
+
+
+
+
+
+Analyzing ufsc::450::20 : 2022-07-19 16:28:38.079140
+Buget: 20k: ufsc - 450m
+Nodes: 48
+Edges: 89
+Primaries: 14
+98.20553420445822
+'Budget remaining: 2000'
+{'edge': (0, 0, 0), 'traveltime': 98.20553420445822, 'type': None}
+'No better solution was found.'
+'Budget remaining: 2000'
+'Best possible solution for this budget: 98.20553420445808'
+[]
+Finished ufsc::450::20 : 2022-07-19 16:29:09.908570
+
+
+
+
+
+
+
+Analyzing ufsc::450::25 : 2022-07-19 16:29:09.908584
+Buget: 25k: ufsc - 450m
+Nodes: 48
+Edges: 89
+Primaries: 14
+98.20553420445808
+'Budget remaining: 2500'
+{'edge': (0, 0, 0), 'traveltime': 98.20553420445808, 'type': None}
+'No better solution was found.'
+'Budget remaining: 2500'
+'Best possible solution for this budget: 98.20553420445819'
+[]
+Finished ufsc::450::25 : 2022-07-19 16:29:39.773452
+
+
+
+
+
+
+
+Analyzing ufsc::600::15 : 2022-07-19 16:29:41.609451
+Buget: 15k: ufsc - 600m
+Nodes: 115
+Edges: 229
+Primaries: 46
+112.34656312309785
+'Budget remaining: 1500'
+{'edge': (0, 0, 0), 'traveltime': 112.34656312309785, 'type': None}
+'No better solution was found.'
+'Budget remaining: 1500'
+'Best possible solution for this budget: 112.34656312309772'
+[]
+Finished ufsc::600::15 : 2022-07-19 16:48:55.193341
+
+
+
+
+
+
+
+Analyzing ufsc::600::20 : 2022-07-19 16:48:55.193352
+Buget: 20k: ufsc - 600m
+Nodes: 115
+Edges: 229
+Primaries: 46
+112.34656312309775
+'Budget remaining: 2000'
+{'edge': (0, 0, 0), 'traveltime': 112.34656312309775, 'type': None}
+'No better solution was found.'
+'Budget remaining: 2000'
+'Best possible solution for this budget: 112.34656312309768'
+[]
+Finished ufsc::600::20 : 2022-07-19 17:07:31.241712
+
+
+
+
+
+
+
+Analyzing ufsc::600::25 : 2022-07-19 17:07:31.241727
+Buget: 25k: ufsc - 600m
+Nodes: 115
+Edges: 229
+Primaries: 46
+112.34656312309782
+'Budget remaining: 2500'
+2342.4
+{'edge': (412462142, 412462143, 0),
+ 'traveltime': 112.34656312309724,
+ 'type': 'remove_lane'}
+{'edge': (412462142, 412462143, 0),
+ 'traveltime': 112.34656312309724,
+ 'type': 'remove_lane'}
+'Removing lane from (412462142, 412462143, 0)'
+'Budget remaining: 2492.192'
+'Budget remaining: 2492.192'
+{'edge': (0, 0, 0), 'traveltime': 112.34656312309724, 'type': None}
+'No better solution was found.'
+'Budget remaining: 2492.192'
+'Best possible solution for this budget: 112.34656312309765'
+[(412462142, 412462143, 0)]
+Finished ufsc::600::25 : 2022-07-19 17:44:40.921922
+
+
+
+
+
+
+
+Analyzing chapecó::450::15 : 2022-07-19 17:44:42.762437
+Buget: 15k: chapecó - 450m
+Nodes: 119
+Edges: 257
+Primaries: 0
+75.0378384426048
+'Budget remaining: 1500'
+{'edge': (0, 0, 0), 'traveltime': 75.0378384426048, 'type': None}
+'No better solution was found.'
+'Budget remaining: 1500'
+'Best possible solution for this budget: 75.03783844260491'
+[]
+Finished chapecó::450::15 : 2022-07-19 17:45:04.573661
+
+
+
+
+
+
+
+Analyzing chapecó::450::20 : 2022-07-19 17:45:04.573674
+Buget: 20k: chapecó - 450m
+Nodes: 119
+Edges: 257
+Primaries: 0
+75.0378384426044
+'Budget remaining: 2000'
+{'edge': (0, 0, 0), 'traveltime': 75.0378384426044, 'type': None}
+'No better solution was found.'
+'Budget remaining: 2000'
+'Best possible solution for this budget: 75.03783844260445'
+[]
+Finished chapecó::450::20 : 2022-07-19 17:45:25.444189
+
+
+
+
+
+
+
+Analyzing chapecó::450::25 : 2022-07-19 17:45:25.444201
+Buget: 25k: chapecó - 450m
+Nodes: 119
+Edges: 257
+Primaries: 0
+75.0378384426049
+'Budget remaining: 2500'
+{'edge': (0, 0, 0), 'traveltime': 75.0378384426049, 'type': None}
+'No better solution was found.'
+'Budget remaining: 2500'
+'Best possible solution for this budget: 75.03783844260484'
+[]
+Finished chapecó::450::25 : 2022-07-19 17:45:47.519334
+
+
+
+
+
+
+
+Analyzing chapecó::600::15 : 2022-07-19 17:45:49.717737
+Buget: 15k: chapecó - 600m
+Nodes: 219
+Edges: 482
+Primaries: 21
+87.05104226649757
+'Budget remaining: 1500'

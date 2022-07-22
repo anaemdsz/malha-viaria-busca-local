@@ -5,7 +5,7 @@ description = ""
 authors = ["pvdsouza <pedro.j.v.souza@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "3.10"
+python = "^3.10"
 osmnx = "^1.2.0"
 networkx = "^2.8.3"
 scipy = "^1.8.1"
